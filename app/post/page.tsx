@@ -49,6 +49,7 @@ function PostScriptContent() {
   const [user, setUser] = useState<any>(null);
   const [pageLoading, setPageLoading] = useState(true);
   const [showMetaForm, setShowMetaForm] = useState(false); // あらすじ等の入力パネルの開閉
+  const [loadedBody, setLoadedBody] = useState<string | null>(null); // 編集時に読み込んだ本文（エディタ表示前に保持しておく）
   
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -122,9 +123,9 @@ function PostScriptContent() {
           if (originalScript) setSelectedOriginalScript(originalScript);
         }
 
-        if (editorRef.current) {
-          editorRef.current.innerHTML = script.body;
-        }
+        // 本文は、エディタがDOMに表示された後に反映する必要があるため、
+        // ここでは一旦stateに保持するだけにする（editorRef.current はこの時点ではまだ null）
+        setLoadedBody(script.body || '');
       }
       
       setPageLoading(false);
@@ -133,13 +134,19 @@ function PostScriptContent() {
     initializePage();
   }, [scriptId, router]);
 
-  // 初回読み込み完了後に、履歴の最初の状態を記録する
+  // pageLoading が false になり、エディタの contentEditable 要素が実際にDOMへ
+  // マウントされたタイミングで、保持していた本文(loadedBody)をエディタに反映し、
+  // それを履歴(Undo用)の最初の状態として記録する。
+  // これが無いと、編集時に本文が一度も表示されず空のまま保存されてしまう不具合が起きる。
   useEffect(() => {
     if (!pageLoading && editorRef.current && historyRef.current.length === 0) {
+      if (loadedBody !== null) {
+        editorRef.current.innerHTML = loadedBody;
+      }
       historyRef.current = [editorRef.current.innerHTML];
       historyIndexRef.current = 0;
     }
-  }, [pageLoading]);
+  }, [pageLoading, loadedBody]);
 
   // ★ 履歴を保存する関数
   // 最適化: innerHTML の読み取り（DOM→文字列化。行数が多いほど重い処理）を

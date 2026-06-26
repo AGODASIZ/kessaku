@@ -28,6 +28,14 @@ function ScriptDetailContent() {
   // 上演報告関連
   const [approvedReports, setApprovedReports] = useState<any[]>([]);
   const [pendingReports, setPendingReports] = useState<any[]>([]);
+
+  // コメント関連
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentName, setCommentName] = useState('');
+  const [commentRole, setCommentRole] = useState<'audience' | 'director'>('audience');
+  const [commentBody, setCommentBody] = useState('');
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [canCommentAsDirector, setCanCommentAsDirector] = useState(false); // 承認済み上演報告を持つか
   const [showReportForm, setShowReportForm] = useState(false);
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportForm, setReportForm] = useState({
@@ -103,6 +111,32 @@ function ScriptDetailContent() {
           .eq('status', 'pending')
           .order('created_at', { ascending: false });
         setPendingReports(pending || []);
+      }
+
+      // コメント一覧を取得
+      const { data: commentsData } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('script_id', scriptId)
+        .order('created_at', { ascending: false });
+      setComments(commentsData || []);
+
+      // 「演出家」としてコメントできるかを判定
+      // 条件：台本の作者本人、または、その台本の承認済み上演報告の報告者であること
+      if (user) {
+        if (user.id === data.user_id) {
+          setCanCommentAsDirector(true);
+        } else {
+          const { data: ownReport } = await supabase
+            .from('performance_reports')
+            .select('id')
+            .eq('script_id', scriptId)
+            .eq('reporter_id', user.id)
+            .eq('status', 'approved')
+            .limit(1)
+            .maybeSingle();
+          setCanCommentAsDirector(!!ownReport);
+        }
       }
 
       // いいねの総数を取得
@@ -243,6 +277,56 @@ function ScriptDetailContent() {
       return;
     }
     setPendingReports((prev) => prev.filter((r) => r.id !== reportId));
+  };
+
+  // コメント投稿
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    if (!commentBody.trim()) return;
+    setCommentSubmitting(true);
+
+    const { data, error } = await supabase
+      .from('comments')
+      .insert({
+        script_id: script.id,
+        user_id: user.id,
+        display_name: commentName.trim() || null,
+        role: commentRole,
+        body: commentBody.trim(),
+      })
+      .select()
+      .single();
+
+    setCommentSubmitting(false);
+
+    if (error) {
+      alert('コメントの投稿に失敗しました: ' + error.message);
+      return;
+    }
+
+    setComments((prev) => [data, ...prev]);
+    setCommentBody('');
+  };
+
+  // コメント削除（投稿者本人 or 台本の作者）
+  const handleDeleteComment = async (commentId: number) => {
+    const confirmed = window.confirm('このコメントを削除します。よろしいですか？');
+    if (!confirmed) return;
+
+    const { error } = await supabase
+      .from('comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (error) {
+      alert('削除に失敗しました: ' + error.message);
+      return;
+    }
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
   };
 
   if (loading) {
@@ -676,6 +760,90 @@ function ScriptDetailContent() {
                       関連リンクを見る
                     </a>
                   )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* コメントセクション */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-serif font-bold mb-4 flex items-center gap-2">
+            <span className="w-1 h-6 bg-black block rounded-full"></span> 感想・コメント
+            <span className="text-sm font-normal text-gray-400">（{comments.length}件）</span>
+          </h2>
+
+          {/* コメント投稿フォーム */}
+          {user ? (
+            <form onSubmit={handleSubmitComment} className="bg-gray-50 border border-gray-200 rounded-lg p-5 mb-6 space-y-3">
+              <div className="flex flex-wrap gap-3">
+                <input
+                  type="text"
+                  value={commentName}
+                  onChange={(e) => setCommentName(e.target.value)}
+                  placeholder="お名前（任意）"
+                  className="flex-grow min-w-[140px] bg-white border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black transition"
+                />
+                <select
+                  value={commentRole}
+                  onChange={(e) => setCommentRole(e.target.value as 'audience' | 'director')}
+                  className="bg-white border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black transition"
+                >
+                  <option value="audience">観客として</option>
+                  {canCommentAsDirector && <option value="director">演出家として</option>}
+                </select>
+              </div>
+              <textarea
+                value={commentBody}
+                onChange={(e) => setCommentBody(e.target.value)}
+                placeholder="感想やコメントを書く"
+                rows={3}
+                className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-black transition resize-none"
+                required
+              />
+              <button
+                type="submit"
+                disabled={commentSubmitting}
+                className="bg-black text-white text-sm font-medium px-5 py-2 rounded hover:bg-gray-800 transition disabled:opacity-50"
+              >
+                {commentSubmitting ? '送信中...' : 'コメントを投稿'}
+              </button>
+            </form>
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 mb-6 text-sm text-gray-500 text-center">
+              コメントするには<Link href="/login" className="text-black underline underline-offset-2 font-medium">ログイン</Link>してください。
+            </div>
+          )}
+
+          {/* コメント一覧 */}
+          {comments.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-6">まだコメントはありません。</p>
+          ) : (
+            <div className="space-y-3">
+              {comments.map((comment) => (
+                <div key={comment.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-gray-800">
+                        {comment.display_name || '名無しさん'}
+                      </span>
+                      {comment.role === 'director' ? (
+                        <span className="bg-violet-50 text-violet-700 border border-violet-200 text-[10px] font-bold px-2 py-0.5 rounded-full">演出家</span>
+                      ) : (
+                        <span className="bg-gray-50 text-gray-500 border border-gray-200 text-[10px] font-bold px-2 py-0.5 rounded-full">観客</span>
+                      )}
+                    </div>
+                    {user && (user.id === comment.user_id || user.id === script.user_id) && (
+                      <button
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="text-gray-300 hover:text-red-500 transition"
+                        title="削除"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{comment.body}</p>
                 </div>
               ))}
             </div>

@@ -13,6 +13,10 @@ export default function MyPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'mine' | 'favorites'>('mine');
 
+  // カスタム削除確認モーダル用のstate（window.confirm はスマホ環境で動作しないことがあるため）
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     async function fetchMyData() {
       // 1. ログイン確認
@@ -106,16 +110,22 @@ export default function MyPage() {
   };
 
   // 台本の削除処理
-  const handleDelete = async (scriptId: number, scriptTitle: string) => {
-    const confirmed = window.confirm(
-      `「${scriptTitle}」を削除します。この操作は取り消せません。本当に削除しますか？`
-    );
-    if (!confirmed) return;
+  // 削除ボタンを押したとき：確認モーダルを開くだけ（実際の削除はまだ行わない）
+  const handleDelete = (scriptId: number, scriptTitle: string) => {
+    setDeleteTarget({ id: scriptId, title: scriptTitle });
+  };
+
+  // モーダルの「削除する」を押したときに実際にSupabaseへ削除を実行する
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
 
     const { error } = await supabase
       .from('scripts')
       .delete()
-      .eq('id', scriptId);
+      .eq('id', deleteTarget.id);
+
+    setDeleting(false);
 
     if (error) {
       alert('削除に失敗しました: ' + error.message);
@@ -123,7 +133,8 @@ export default function MyPage() {
     }
 
     // 画面上のリストからも即座に取り除く
-    setMyScripts((prev) => prev.filter((s) => s.id !== scriptId));
+    setMyScripts((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+    setDeleteTarget(null);
   };
 
   if (loading) {
@@ -315,6 +326,43 @@ export default function MyPage() {
         )}
 
       </main>
+
+      {/* 削除確認モーダル（window.confirm はスマホで動作しないことがあるため自前で実装） */}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] px-4"
+          onClick={() => !deleting && setDeleteTarget(null)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 text-red-600 mb-3">
+              <span className="material-symbols-outlined">warning</span>
+              <h3 className="font-bold text-lg">台本を削除しますか？</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-6">
+              「<span className="font-bold">{deleteTarget.title}</span>」を削除します。この操作は取り消せません。
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="flex-1 bg-gray-100 text-gray-700 text-sm font-medium px-4 py-2.5 rounded hover:bg-gray-200 transition disabled:opacity-50"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="flex-1 bg-red-600 text-white text-sm font-medium px-4 py-2.5 rounded hover:bg-red-700 transition disabled:opacity-50"
+              >
+                {deleting ? '削除中...' : '削除する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
