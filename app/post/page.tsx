@@ -138,10 +138,19 @@ function PostScriptContent() {
   // マウントされたタイミングで、保持していた本文(loadedBody)をエディタに反映し、
   // それを履歴(Undo用)の最初の状態として記録する。
   // これが無いと、編集時に本文が一度も表示されず空のまま保存されてしまう不具合が起きる。
+  //
+  // 重要: この div の中身は JSX の子要素としては書かない（常に空のまま）。
+  // contentEditable な要素は React の再レンダリングのたびに JSX 側の子要素で
+  // DOM を上書きされてしまうことがあり、そうなると手動でセットした本文が
+  // 再レンダリングの瞬間に消えてしまう。そのため中身は常にこの useEffect 経由の
+  // innerHTML 操作だけで管理する。
   useEffect(() => {
     if (!pageLoading && editorRef.current && historyRef.current.length === 0) {
-      if (loadedBody !== null) {
+      if (loadedBody !== null && loadedBody !== '') {
         editorRef.current.innerHTML = loadedBody;
+      } else {
+        // 新規作成、または本文が空の場合は、最初の1行を用意する
+        editorRef.current.innerHTML = '<br>';
       }
       historyRef.current = [editorRef.current.innerHTML];
       historyIndexRef.current = 0;
@@ -935,9 +944,7 @@ function PostScriptContent() {
               lineHeight: '1.8',
             }}
             className="text-gray-800 text-base md:text-lg outline-none flex-grow min-h-[400px] md:min-h-[500px] text-left font-sans empty:before:content-['ここから台本を書き始めましょう...'] empty:before:text-gray-300"
-          >
-            {!scriptId && <br />}
-          </div>
+          />
 
         </div>
       </main>
