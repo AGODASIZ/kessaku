@@ -407,7 +407,7 @@ function ScriptDetailContent() {
         {/* ライセンス詳細（料金・改変・翻案の可否） */}
         <div className="mb-8 bg-white border border-gray-200 rounded-lg p-5">
           <p className="text-xs font-bold text-gray-400 mb-3">上演ライセンス詳細</p>
-          <div className="flex flex-wrap gap-3 text-sm">
+          <div className="flex flex-wrap gap-3 text-sm mb-3">
             <span className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded px-3 py-1.5">
               <span className="material-symbols-outlined text-[16px] text-gray-400">school</span>
               非営利上演：{feeLabel(script.nonprofit_fee)}
@@ -425,7 +425,29 @@ function ScriptDetailContent() {
               翻案{script.adaptation_allowed ? '可' : '不可'}
             </span>
           </div>
+          {(script.nonprofit_fee_detail || script.commercial_fee_detail) && (
+            <div className="text-xs text-gray-600 space-y-1 bg-gray-50 rounded p-3">
+              {script.nonprofit_fee_detail && <p>非営利：{script.nonprofit_fee_detail}</p>}
+              {script.commercial_fee_detail && <p>営利：{script.commercial_fee_detail}</p>}
+            </div>
+          )}
         </div>
+
+        {/* タグ */}
+        {script.tags && script.tags.length > 0 && (
+          <div className="mb-8 flex flex-wrap gap-2">
+            {script.tags.map((tag: string) => (
+              <Link
+                key={tag}
+                href={`/search?tag=${encodeURIComponent(tag)}`}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-full transition flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-[14px]">tag</span>
+                {tag}
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* あらすじ */}
         <div className="mb-12">

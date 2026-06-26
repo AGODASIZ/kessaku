@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
+import DrumNumberPicker from '../../components/DrumNumberPicker';
 
 function PostScriptContent() {
   const router = useRouter();
@@ -14,16 +15,29 @@ function PostScriptContent() {
   const [author, setAuthor] = useState('');
   const [genre, setGenre] = useState('青春・学園');
   const [synopsis, setSynopsis] = useState('');
-  const [time, setTime] = useState('');
+  const [timeMinutes, setTimeMinutes] = useState<number | ''>('');
   const [cast, setCast] = useState('');
+
+  // 配役人数（男性役・女性役・指定なし役）
+  const [castMale, setCastMale] = useState(0);
+  const [castFemale, setCastFemale] = useState(0);
+  const [castAny, setCastAny] = useState(0);
+
   const [characters, setCharacters] = useState<{ name: string; description: string }[]>([]);
 
   // ライセンス関連
   const [nonprofitFee, setNonprofitFee] = useState('free'); // 'free' | 'paid' | 'negotiable'
   const [commercialFee, setCommercialFee] = useState('paid');
+  const [nonprofitFeeDetail, setNonprofitFeeDetail] = useState('');
+  const [commercialFeeDetail, setCommercialFeeDetail] = useState('');
   const [performanceAllowed, setPerformanceAllowed] = useState(true);
   const [modificationAllowed, setModificationAllowed] = useState(false);
   const [adaptationAllowed, setAdaptationAllowed] = useState(false);
+
+  // タグ関連
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  const [recommendedTags, setRecommendedTags] = useState<string[]>([]);
 
   // 翻案関連
   const [isAdaptation, setIsAdaptation] = useState(false);
@@ -79,8 +93,14 @@ function PostScriptContent() {
         setAuthor(script.author);
         setGenre(script.genre || '青春・学園');
         setSynopsis(script.synopsis || '');
-        setTime(script.time || '');
+        setTimeMinutes(script.time_minutes ?? '');
         setCast(script.cast || '');
+        setCastMale(script.cast_male || 0);
+        setCastFemale(script.cast_female || 0);
+        setCastAny(script.cast_any || 0);
+        setTags(Array.isArray(script.tags) ? script.tags : []);
+        setNonprofitFeeDetail(script.nonprofit_fee_detail || '');
+        setCommercialFeeDetail(script.commercial_fee_detail || '');
         setCharacters(Array.isArray(script.characters) ? script.characters : []);
 
         // ライセンス関連の読み込み
@@ -259,6 +279,44 @@ function PostScriptContent() {
     // それ以外のキーはすべて標準のテキスト編集動作のまま
   };
 
+  // 同じジャンルでよく使われているタグを集計し、おすすめとして表示する
+  useEffect(() => {
+    async function fetchRecommendedTags() {
+      const { data } = await supabase
+        .from('scripts')
+        .select('tags')
+        .eq('genre', genre)
+        .eq('status', 'published')
+        .not('tags', 'is', null)
+        .limit(200);
+
+      if (!data) return;
+      const countMap: Record<string, number> = {};
+      data.forEach((row: any) => {
+        (row.tags || []).forEach((t: string) => {
+          countMap[t] = (countMap[t] || 0) + 1;
+        });
+      });
+      const sorted = Object.entries(countMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([tag]) => tag);
+      setRecommendedTags(sorted);
+    }
+    fetchRecommendedTags();
+  }, [genre]);
+
+  const handleAddTag = (tag: string) => {
+    const trimmed = tag.trim();
+    if (!trimmed || tags.includes(trimmed) || tags.length >= 10) return;
+    setTags([...tags, trimmed]);
+    setTagInput('');
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setTags(tags.filter((t) => t !== tag));
+  };
+
   // ★ 登場人物の操作（追加・削除・編集）
   const handleAddCharacter = () => {
     setCharacters([...characters, { name: '', description: '' }]);
@@ -338,19 +396,37 @@ function PostScriptContent() {
       finalOriginalScriptId = originalScriptId;
     }
 
+    // 配役人数（男性役・女性役・指定なし役）から表示用の文字列を自動生成
+    const castParts: string[] = [];
+    if (castMale > 0) castParts.push(`男${castMale}`);
+    if (castFemale > 0) castParts.push(`女${castFemale}`);
+    if (castAny > 0) castParts.push(`指定なし${castAny}`);
+    const castText = castParts.length > 0 ? castParts.join(' / ') : '未設定';
+
+    // 上演時間（分）。互換性のため、表示用の文字列(time)もここから自動生成する
+    const timeMinutesValue = timeMinutes === '' ? null : Number(timeMinutes);
+    const timeText = timeMinutesValue ? `約${timeMinutesValue}分` : '未設定';
+
     const scriptData = {
       title: title,
       author: author,
       body: bodyContent,
       genre: genre,
       synopsis: synopsis || 'あらすじはまだ入力されていません。',
-      time: time || '未設定',
-      cast: cast || '未設定',
+      time: timeText,
+      time_minutes: timeMinutesValue,
+      cast: castText,
+      cast_male: castMale,
+      cast_female: castFemale,
+      cast_any: castAny,
       characters: validCharacters,
+      tags: tags,
       status: isDraft ? 'draft' : 'published',
       user_id: user.id,
       nonprofit_fee: finalNonprofitFee,
       commercial_fee: finalCommercialFee,
+      nonprofit_fee_detail: finalNonprofitFee !== 'free' ? nonprofitFeeDetail.slice(0, 100) : null,
+      commercial_fee_detail: finalCommercialFee !== 'free' ? commercialFeeDetail.slice(0, 100) : null,
       performance_allowed: performanceAllowed,
       modification_allowed: modificationAllowed,
       adaptation_allowed: adaptationAllowed,
@@ -499,25 +575,35 @@ function PostScriptContent() {
                   {/* 上演時間 */}
                   <div>
                     <label className="block text-xs font-bold text-gray-500 mb-2">上演時間</label>
-                    <input
-                      type="text"
-                      value={time}
-                      onChange={(e) => setTime(e.target.value)}
-                      placeholder="例：約60分"
-                      className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 outline-none focus:border-black transition"
-                    />
+                    <div className="relative">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={300}
+                        value={timeMinutes}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setTimeMinutes(v === '' ? '' : Number(v));
+                        }}
+                        placeholder="60"
+                        className="w-full bg-white border border-gray-300 rounded-md pl-3 pr-10 py-2 text-sm text-gray-700 outline-none focus:border-black transition"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">分</span>
+                    </div>
                   </div>
 
-                  {/* 配役 */}
-                  <div>
+                  {/* 配役（人数） */}
+                  <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-500 mb-2">配役（人数）</label>
-                    <input
-                      type="text"
-                      value={cast}
-                      onChange={(e) => setCast(e.target.value)}
-                      placeholder="例：男2 / 女3"
-                      className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 outline-none focus:border-black transition"
-                    />
+                    <div className="flex items-center gap-6 justify-center bg-gray-50 border border-gray-200 rounded-md py-4">
+                      <DrumNumberPicker value={castMale} onChange={setCastMale} min={0} max={20} label="男性役" />
+                      <DrumNumberPicker value={castFemale} onChange={setCastFemale} min={0} max={20} label="女性役" />
+                      <DrumNumberPicker value={castAny} onChange={setCastAny} min={0} max={20} label="指定なし" />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2 text-center">
+                      合計 {castMale + castFemale + castAny} 人
+                    </p>
                   </div>
 
                   {/* あらすじ */}
@@ -638,6 +724,19 @@ function PostScriptContent() {
                                 <option value="paid">有料</option>
                                 <option value="negotiable">要相談</option>
                               </select>
+                              {nonprofitFee !== 'free' && (
+                                <div className="mt-2">
+                                  <textarea
+                                    value={nonprofitFeeDetail}
+                                    onChange={(e) => setNonprofitFeeDetail(e.target.value.slice(0, 100))}
+                                    placeholder="例：1公演5,000円／要事前連絡"
+                                    rows={2}
+                                    maxLength={100}
+                                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-xs outline-none focus:border-black transition resize-none"
+                                  />
+                                  <p className="text-[10px] text-gray-400 text-right mt-0.5">{nonprofitFeeDetail.length}/100文字</p>
+                                </div>
+                              )}
                             </div>
                             <div>
                               <label className="block text-xs font-bold text-gray-500 mb-1">営利上演の料金</label>
@@ -650,6 +749,19 @@ function PostScriptContent() {
                                 <option value="paid">有料</option>
                                 <option value="negotiable">要相談</option>
                               </select>
+                              {commercialFee !== 'free' && (
+                                <div className="mt-2">
+                                  <textarea
+                                    value={commercialFeeDetail}
+                                    onChange={(e) => setCommercialFeeDetail(e.target.value.slice(0, 100))}
+                                    placeholder="例：1公演30,000円／観客動員数に応じて相談"
+                                    rows={2}
+                                    maxLength={100}
+                                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-xs outline-none focus:border-black transition resize-none"
+                                  />
+                                  <p className="text-[10px] text-gray-400 text-right mt-0.5">{commercialFeeDetail.length}/100文字</p>
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -675,6 +787,70 @@ function PostScriptContent() {
                       )}
                     </div>
                   )}
+
+                  {/* タグ */}
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-gray-500 mb-2">タグ（最大10個）</label>
+
+                    {/* 追加済みのタグ（チップ表示） */}
+                    {tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="bg-black text-white text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1"
+                          >
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTag(tag)}
+                              className="hover:text-gray-300 transition"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">close</span>
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* タグ入力欄 */}
+                    <input
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddTag(tagInput);
+                        }
+                      }}
+                      placeholder="タグを入力してEnter（例：学校公演向け、体育館可）"
+                      disabled={tags.length >= 10}
+                      className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 outline-none focus:border-black transition disabled:bg-gray-100"
+                    />
+
+                    {/* おすすめタグ（同じジャンルでよく使われているもの） */}
+                    {recommendedTags.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-[11px] text-gray-400 mb-1.5">「{genre}」でよく使われるタグ：</p>
+                        <div className="flex flex-wrap gap-2">
+                          {recommendedTags
+                            .filter((t) => !tags.includes(t))
+                            .map((tag) => (
+                              <button
+                                key={tag}
+                                type="button"
+                                onClick={() => handleAddTag(tag)}
+                                className="bg-gray-50 border border-gray-300 text-gray-600 text-xs px-3 py-1.5 rounded-full hover:bg-gray-100 transition flex items-center gap-1"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">add</span>
+                                {tag}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* 登場人物 */}
                   <div className="md:col-span-2">

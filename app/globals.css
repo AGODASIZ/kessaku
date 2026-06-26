@@ -24,3 +24,12 @@
   --font-sans: 'Noto Sans JP', ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Noto Serif JP', ui-serif, Georgia, serif;
 }
+
+/* ドラム式ピッカーなどで、見た目のスクロールバーを隠すためのユーティリティ */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

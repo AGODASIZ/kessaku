@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { getLicenseBadge } from '../../lib/licenseUtils';
 
-export default function SearchPage() {
+function SearchPageContent() {
+  const searchParamsUrl = useSearchParams();
   const [scripts, setScripts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -13,7 +15,15 @@ export default function SearchPage() {
   const [keyword, setKeyword] = useState('');
   const [genre, setGenre] = useState('ジャンルすべて');
   const [timeFilter, setTimeFilter] = useState('上演時間すべて');
+  const [castFilter, setCastFilter] = useState('人数すべて');
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState('新着順');
+
+  // URLの ?tag=... パラメータを初期値として反映（台本詳細ページのタグリンクから来た場合）
+  useEffect(() => {
+    const tagParam = searchParamsUrl.get('tag');
+    if (tagParam) setTagFilter(tagParam);
+  }, [searchParamsUrl]);
 
   // ページネーション
   const [currentPage, setCurrentPage] = useState(1);
@@ -51,10 +61,12 @@ export default function SearchPage() {
     fetchScripts();
   }, []);
 
-  // 上演時間の文字列（例："約60分" "60分"）から分数を抜き出す
-  const extractMinutes = (timeStr: string | null | undefined): number | null => {
-    if (!timeStr) return null;
-    const match = timeStr.match(/(\d+)/);
+  // 上演時間（分）を取得する。time_minutes があれば優先し、
+  // 無い（古いデータ）場合は time の文字列（例："約60分"）から抜き出す
+  const extractMinutes = (script: { time_minutes?: number | null; time?: string | null }): number | null => {
+    if (script.time_minutes != null) return script.time_minutes;
+    if (!script.time) return null;
+    const match = script.time.match(/(\d+)/);
     return match ? parseInt(match[1], 10) : null;
   };
 
@@ -69,7 +81,7 @@ export default function SearchPage() {
     const matchesGenre = genre === 'ジャンルすべて' || script.genre === genre;
 
     let matchesTime = true;
-    const minutes = extractMinutes(script.time);
+    const minutes = extractMinutes(script);
     if (timeFilter === '30分未満') {
       matchesTime = minutes !== null && minutes < 30;
     } else if (timeFilter === '30分〜60分') {
@@ -78,7 +90,23 @@ export default function SearchPage() {
       matchesTime = minutes !== null && minutes > 60;
     }
 
-    return matchesKeyword && matchesGenre && matchesTime;
+    // 合計人数によるフィルタ（cast_male + cast_female + cast_any の合計で判定）
+    const totalCast = (script.cast_male || 0) + (script.cast_female || 0) + (script.cast_any || 0);
+    let matchesCast = true;
+    if (castFilter === '3人以下') {
+      matchesCast = totalCast > 0 && totalCast <= 3;
+    } else if (castFilter === '4〜5人') {
+      matchesCast = totalCast >= 4 && totalCast <= 5;
+    } else if (castFilter === '6〜10人') {
+      matchesCast = totalCast >= 6 && totalCast <= 10;
+    } else if (castFilter === '11人以上') {
+      matchesCast = totalCast >= 11;
+    }
+
+    // タグによるフィルタ
+    const matchesTag = !tagFilter || (Array.isArray(script.tags) && script.tags.includes(tagFilter));
+
+    return matchesKeyword && matchesGenre && matchesTime && matchesCast && matchesTag;
   });
 
   // ソート
@@ -86,8 +114,8 @@ export default function SearchPage() {
     if (sortOrder === '新着順') {
       return b.id - a.id;
     } else if (sortOrder === '上演時間が短い順') {
-      const aMin = extractMinutes(a.time) ?? Infinity;
-      const bMin = extractMinutes(b.time) ?? Infinity;
+      const aMin = extractMinutes(a) ?? Infinity;
+      const bMin = extractMinutes(b) ?? Infinity;
       return aMin - bMin;
     } else if (sortOrder === '人気順') {
       return (b.likeCount || 0) - (a.likeCount || 0);
@@ -180,8 +208,33 @@ export default function SearchPage() {
                 <option>30分〜60分</option>
                 <option>60分以上</option>
               </select>
+              <select
+                value={castFilter}
+                onChange={(e) => setCastFilter(e.target.value)}
+                className="bg-gray-100 border-none outline-none text-gray-700 rounded-md px-4 py-3 cursor-pointer w-full md:w-auto"
+              >
+                <option>人数すべて</option>
+                <option>3人以下</option>
+                <option>4〜5人</option>
+                <option>6〜10人</option>
+                <option>11人以上</option>
+              </select>
             </div>
           </div>
+
+          {/* タグフィルターが適用されている場合のバッジ表示 */}
+          {tagFilter && (
+            <div className="mt-4 flex items-center gap-2">
+              <span className="text-sm text-gray-500">タグで絞り込み中：</span>
+              <span className="bg-black text-white text-sm font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">tag</span>
+                {tagFilter}
+                <button onClick={() => setTagFilter(null)} className="hover:text-gray-300 transition">
+                  <span className="material-symbols-outlined text-[14px]">close</span>
+                </button>
+              </span>
+            </div>
+          )}
         </div>
 
         {/* 検索結果一覧 */}
@@ -323,5 +376,13 @@ export default function SearchPage() {
       </footer>
 
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-gray-400">読み込み中...</div>}>
+      <SearchPageContent />
+    </Suspense>
   );
 }
