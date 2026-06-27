@@ -11,6 +11,10 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null); // ログインユーザー情報を保持
 
+  // ヒーロー画像スライドショー関連
+  const [heroImages, setHeroImages] = useState<{ id: number; image_url: string }[]>([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
   // 画面が開いた瞬間にSupabaseから公開済みの台本とユーザー情報を自動取得
   useEffect(() => {
     async function initialize() {
@@ -28,10 +32,28 @@ export default function HomePage() {
       if (!error && data) {
         setScripts(data);
       }
+
+      // 3. トップページのヒーロー画像（スライドショー用）を取得
+      const { data: images } = await supabase
+        .from('hero_images')
+        .select('id, image_url')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+      setHeroImages(images || []);
+
       setLoading(false);
     }
     initialize();
   }, []);
+
+  // ヒーロー画像を数秒ごとに自動で切り替える
+  useEffect(() => {
+    if (heroImages.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroImages.length);
+    }, 5000); // 5秒ごとに切り替え
+    return () => clearInterval(timer);
+  }, [heroImages]);
 
   // 検索キーワードに一致する台本をフィルタリング（リアルタイム連動）
   const filteredScripts = scripts.filter(script => 
@@ -85,6 +107,37 @@ export default function HomePage() {
       <main>
         {/* Hero Section */}
         <section className="py-16 md:py-32 flex flex-col items-center text-center px-6">
+
+          {/* ヒーロー画像スライドショー（管理者が登録した画像がある場合のみ表示） */}
+          {heroImages.length > 0 && (
+            <div className="w-full max-w-3xl mb-10 md:mb-14 rounded-lg overflow-hidden shadow-sm relative aspect-[3/2]">
+              {heroImages.map((img, idx) => (
+                <img
+                  key={img.id}
+                  src={img.image_url}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
+                  style={{ opacity: idx === currentSlide ? 1 : 0 }}
+                />
+              ))}
+              {/* スライドのドットインジケーター */}
+              {heroImages.length > 1 && (
+                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+                  {heroImages.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentSlide(idx)}
+                      className={`w-2 h-2 rounded-full transition ${
+                        idx === currentSlide ? 'bg-white' : 'bg-white/40'
+                      }`}
+                      aria-label={`スライド${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-serif font-bold leading-tight tracking-wide mb-6 md:mb-8">
             あなたの作品が<br />誰かの舞台になる
           </h1>
