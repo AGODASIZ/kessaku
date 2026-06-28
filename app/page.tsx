@@ -27,9 +27,9 @@ export default function HomePage() {
   // お知らせバナー関連
   const [banners, setBanners] = useState<{ id: number; image_url: string; link_url: string | null }[]>([]);
 
-  // 最低2秒間はスプラッシュを表示し続けるためのタイマー
+  // 最低3.2秒間はスプラッシュ（動画）を表示し続けるためのタイマー
   useEffect(() => {
-    const timer = setTimeout(() => setMinTimeElapsed(true), 2000);
+    const timer = setTimeout(() => setMinTimeElapsed(true), 3200);
     return () => clearTimeout(timer);
   }, []);
 
