@@ -18,7 +18,7 @@ export default function LoadingSplash({ isVisible }: { isVisible: boolean }) {
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
       videoRef.current.play().catch(() => {
-        setMounted(false);
+        // 自動再生がブロックされた場合は何もしない（ユーザー操作後に再生されることがある）
       });
     }
   }, []);
@@ -38,6 +38,15 @@ export default function LoadingSplash({ isVisible }: { isVisible: boolean }) {
       className="fixed inset-0 z-[200] bg-black flex items-center justify-center md:hidden"
       style={{ opacity, transition: 'opacity 0.5s ease-out' }}
     >
+      {/* 「読み込み中…」文言。画面の高さの1/3あたり（中央より上）に配置し、
+          中央にあるロゴ動画と重ならないようにする */}
+      <p
+        className="absolute left-0 right-0 text-center text-white text-sm tracking-widest"
+        style={{ top: '33%' }}
+      >
+        読み込み中…
+      </p>
+
       <video
         ref={videoRef}
         src="/loading-logo.mp4"

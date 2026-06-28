@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { getLicenseBadge, feeLabel } from '../../lib/licenseUtils';
+import TextureOverlay from '../../components/TextureOverlay';
 
 function ScriptDetailContent() {
   const searchParams = useSearchParams();
@@ -329,6 +330,9 @@ function ScriptDetailContent() {
 
   return (
     <div className="text-gray-900 bg-gray-50/30 font-sans antialiased min-h-screen flex flex-col">
+
+      {/* スマホ限定の常時テクスチャオーバーレイ */}
+      <TextureOverlay />
 
       {/* Header (共通) */}
       <header className="border-b border-gray-100 sticky top-0 bg-white/90 backdrop-blur-sm z-50">
