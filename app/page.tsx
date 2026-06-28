@@ -7,6 +7,7 @@ import { getLicenseBadge } from '../lib/licenseUtils';
 import PageFlipSlideshow from '../components/PageFlipSlideshow';
 import AnnouncementBanners from '../components/AnnouncementBanners';
 import LoadingSplash from '../components/LoadingSplash';
+import TextureOverlay from '../components/TextureOverlay';
 
 export default function HomePage() {
   const [scripts, setScripts] = useState<any[]>([]);
@@ -102,6 +103,7 @@ export default function HomePage() {
           常にレンダリングし、isVisible で表示/フェードアウトを制御する
           （こうしないと、消える瞬間のフェードアニメーションが再生されない） */}
       <LoadingSplash isVisible={showSplash} />
+      <TextureOverlay />
 
       {/* Header */}
       <header className="border-b border-gray-100 sticky top-0 bg-white/90 backdrop-blur-sm z-50">
