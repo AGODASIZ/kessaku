@@ -147,7 +147,12 @@ export default function PageFlipSlideshow({
           src={images[frontIndex].image_url}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ backfaceVisibility: 'hidden' }}
+          style={{
+            backfaceVisibility: 'hidden',
+            // めくれが進むほど薄くなり、めくり切る直前でほぼ透明になってフェードアウトする
+            opacity: 1 - Math.min(1, Math.abs(flipAngle) / 150),
+            transition: withTransition ? 'opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+          }}
           draggable={false}
         />
         {/* めくれている最中、紙の裏側に薄い陰影をつけて奥行きを出す */}
@@ -156,6 +161,7 @@ export default function PageFlipSlideshow({
           style={{
             backfaceVisibility: 'hidden',
             opacity: Math.min(0.35, Math.abs(flipAngle) / 180 * 0.5),
+            transition: withTransition ? 'opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
           }}
         />
       </div>
