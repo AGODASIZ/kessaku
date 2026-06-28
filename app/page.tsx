@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../lib/supabase'; // パスが違う場合は修正してください
 import { getLicenseBadge } from '../lib/licenseUtils';
+import PageFlipSlideshow from '../components/PageFlipSlideshow';
+import AnnouncementBanners from '../components/AnnouncementBanners';
 
 export default function HomePage() {
   const [scripts, setScripts] = useState<any[]>([]);
@@ -14,6 +16,9 @@ export default function HomePage() {
   // ヒーロー画像スライドショー関連
   const [heroImages, setHeroImages] = useState<{ id: number; image_url: string }[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // お知らせバナー関連
+  const [banners, setBanners] = useState<{ id: number; image_url: string; link_url: string | null }[]>([]);
 
   // 画面が開いた瞬間にSupabaseから公開済みの台本とユーザー情報を自動取得
   useEffect(() => {
@@ -40,6 +45,15 @@ export default function HomePage() {
         .eq('is_active', true)
         .order('display_order', { ascending: true });
       setHeroImages(images || []);
+
+      // 4. お知らせバナー（最大3枚）を取得
+      const { data: bannersData } = await supabase
+        .from('announcement_banners')
+        .select('id, image_url, link_url')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+        .limit(3);
+      setBanners(bannersData || []);
 
       setLoading(false);
     }
@@ -108,34 +122,13 @@ export default function HomePage() {
         {/* Hero Section */}
         <section className="py-16 md:py-32 flex flex-col items-center text-center px-6">
 
+          {/* お知らせバナー（3枚、管理者が登録している場合のみ表示） */}
+          <AnnouncementBanners banners={banners} />
+
           {/* ヒーロー画像スライドショー（管理者が登録した画像がある場合のみ表示） */}
+          {/* 本のページをめくるような3D回転アニメーションで切り替える */}
           {heroImages.length > 0 && (
-            <div className="w-full max-w-3xl mb-10 md:mb-14 rounded-lg overflow-hidden shadow-sm relative aspect-[3/2]">
-              {heroImages.map((img, idx) => (
-                <img
-                  key={img.id}
-                  src={img.image_url}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
-                  style={{ opacity: idx === currentSlide ? 1 : 0 }}
-                />
-              ))}
-              {/* スライドのドットインジケーター */}
-              {heroImages.length > 1 && (
-                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
-                  {heroImages.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setCurrentSlide(idx)}
-                      className={`w-2 h-2 rounded-full transition ${
-                        idx === currentSlide ? 'bg-white' : 'bg-white/40'
-                      }`}
-                      aria-label={`スライド${idx + 1}`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+            <PageFlipSlideshow images={heroImages} currentSlide={currentSlide} onDotClick={setCurrentSlide} />
           )}
 
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-serif font-bold leading-tight tracking-wide mb-6 md:mb-8">
