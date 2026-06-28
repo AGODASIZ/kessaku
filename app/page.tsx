@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'; // パスが違う場合は修正し
 import { getLicenseBadge } from '../lib/licenseUtils';
 import PageFlipSlideshow from '../components/PageFlipSlideshow';
 import AnnouncementBanners from '../components/AnnouncementBanners';
+import LoadingSplash from '../components/LoadingSplash';
 
 export default function HomePage() {
   const [scripts, setScripts] = useState<any[]>([]);
@@ -13,12 +14,31 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null); // ログインユーザー情報を保持
 
+  // 初回読み込み中のスプラッシュ画面（GIF）表示フラグ。
+  // データ取得が終わるまで、かつ最低2秒間は表示し続ける（一瞬で消えてアニメーションが
+  // 見えなくなるのを防ぐため）。スマホ表示でのみ実際には見える（LoadingSplash内部でmd:hidden）。
+  const [showSplash, setShowSplash] = useState(true);
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+
   // ヒーロー画像スライドショー関連
   const [heroImages, setHeroImages] = useState<{ id: number; image_url: string }[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // お知らせバナー関連
   const [banners, setBanners] = useState<{ id: number; image_url: string; link_url: string | null }[]>([]);
+
+  // 最低2秒間はスプラッシュを表示し続けるためのタイマー
+  useEffect(() => {
+    const timer = setTimeout(() => setMinTimeElapsed(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // データ読み込みが終わり、かつ最低表示時間も過ぎたら、スプラッシュを消す
+  useEffect(() => {
+    if (!loading && minTimeElapsed) {
+      setShowSplash(false);
+    }
+  }, [loading, minTimeElapsed]);
 
   // 画面が開いた瞬間にSupabaseから公開済みの台本とユーザー情報を自動取得
   useEffect(() => {
@@ -77,6 +97,9 @@ export default function HomePage() {
 
   return (
     <div className="text-gray-900 bg-white font-sans antialiased">
+
+      {/* 初回読み込み中のスプラッシュ画面（スマホでのみ表示） */}
+      {showSplash && <LoadingSplash />}
 
       {/* Header */}
       <header className="border-b border-gray-100 sticky top-0 bg-white/90 backdrop-blur-sm z-50">
