@@ -12,7 +12,7 @@ export default function AnnouncementBanners({ banners }: { banners: Banner[] }) 
   if (banners.length === 0) return null;
 
   return (
-    <div className="w-full max-w-3xl mb-6 flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-1 px-1">
+    <div className="w-full max-w-xl mb-6 flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-1 px-1">
       {banners.map((banner) => {
         const content = (
           <img
@@ -24,9 +24,9 @@ export default function AnnouncementBanners({ banners }: { banners: Banner[] }) 
         );
 
         const isInternal = banner.link_url?.startsWith('/');
-        // 1枚ずつのサイズ：スマホでは画面の72%程度を1枚分の幅にして、隣がちらっと見える
+        // 1枚ずつのサイズ：スマホでは画面の60%程度を1枚分の幅にして、隣がちらっと見える
         // ことでスクロールできることが伝わるようにする。PCでは3枚並んでも余裕がある幅に。
-        const sizeClass = 'w-[72%] sm:w-[31%] flex-shrink-0 snap-start';
+        const sizeClass = 'w-[60%] sm:w-[31%] flex-shrink-0 snap-start';
 
         if (!banner.link_url) {
           return (
