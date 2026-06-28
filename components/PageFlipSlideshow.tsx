@@ -110,7 +110,7 @@ export default function PageFlipSlideshow({
   return (
     <div
       ref={containerRef}
-      className="w-full max-w-3xl mb-10 md:mb-14 rounded-lg shadow-sm relative aspect-[3/2] select-none touch-pan-y"
+      className="w-full max-w-3xl mb-10 md:mb-14 rounded-lg relative aspect-[3/2] select-none touch-pan-y"
       style={{ perspective: '1800px', cursor: images.length > 1 ? 'grab' : 'default' }}
       onMouseDown={(e) => handleDragStart(e.clientX)}
       onMouseMove={(e) => handleDragMove(e.clientX)}
@@ -130,7 +130,9 @@ export default function PageFlipSlideshow({
         />
       </div>
 
-      {/* 前面レイヤー：めくられる側のページ。これだけが回転する */}
+      {/* 前面レイヤー：めくられる側のページ。これだけが回転し、180度回転すると
+          backfaceVisibility:hidden により自動的に裏側が見えなくなり、
+          背面レイヤー（次の画像）の後ろに完全に隠れる */}
       <div
         className="absolute inset-0 rounded-lg overflow-hidden"
         style={{
@@ -138,48 +140,16 @@ export default function PageFlipSlideshow({
           transformStyle: 'preserve-3d',
           transformOrigin: 'left center',
           transform: `rotateY(${flipAngle}deg)`,
-          transition: withTransition ? 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-          // 90度を超えて裏を向いた瞬間から影を消していく。box-shadowはbackface-visibility
-          // の影響を受けず、要素が真横〜裏向きになっても矩形の輪郭として残ってしまうため、
-          // 角度に応じて自分で薄くする必要がある。
-          boxShadow: `0 8px 24px rgba(0,0,0,${Math.max(0, 0.15 * (1 - Math.abs(flipAngle) / 90))})`,
+          transition: withTransition ? 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
         }}
         onTransitionEnd={handleFlipEnd}
       >
-        {(() => {
-          // めくれが進むほど、紙の「先端（右側）」から透明になっていくようにする。
-          // 左端（綴じ目=回転軸）は最後まで濃く残るので、急に消える違和感がなくなる。
-          // fadeStart: フェードが始まる境界の位置（%）。0度では右端(100%)から、
-          // 90度に近づくほど境界が左へ移動し、最終的には左端(0%)に到達して全体が透明になる。
-          const progress = Math.min(1, Math.abs(flipAngle) / 150); // 0〜1
-          const fadeStartPercent = Math.max(0, 100 - progress * 130); // 130は消える速さの調整値
-          const maskImage = `linear-gradient(to right, black 0%, black ${fadeStartPercent}%, transparent ${Math.min(100, fadeStartPercent + 25)}%)`;
-
-          return (
-            <img
-              src={images[frontIndex].image_url}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-              style={{
-                backfaceVisibility: 'hidden',
-                WebkitMaskImage: maskImage,
-                maskImage,
-                transition: withTransition ? 'mask-image 0.5s cubic-bezier(0.4, 0, 0.2, 1), -webkit-mask-image 0.5s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-              }}
-              draggable={false}
-            />
-          );
-        })()}
-        {/* めくれている最中、紙の先端側だけに薄い陰影をつけて奥行きを出す
-            （左端=軸は影をつけず、右端=先端に向かってだけ暗くする） */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backfaceVisibility: 'hidden',
-            background: 'linear-gradient(to right, transparent 60%, rgba(0,0,0,0.25) 100%)',
-            opacity: Math.min(1, Math.abs(flipAngle) / 130),
-            transition: withTransition ? 'opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-          }}
+        <img
+          src={images[frontIndex].image_url}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ backfaceVisibility: 'hidden' }}
+          draggable={false}
         />
       </div>
 
