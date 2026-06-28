@@ -18,7 +18,7 @@ export default function LoadingSplash({ isVisible }: { isVisible: boolean }) {
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
       videoRef.current.play().catch(() => {
-        // 自動再生がブロックされた場合は何もしない（ユーザー操作後に再生されることがある）
+        setMounted(false);
       });
     }
   }, []);
