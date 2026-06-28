@@ -60,7 +60,7 @@ export default function LoadingSplash({ isVisible }: { isVisible: boolean }) {
       {/* 「読み込み中…」文言。画面の高さの1/3あたり（中央より上）に配置し、
           中央にあるロゴ動画と重ならないようにする */}
       <p
-        className="absolute left-0 right-0 text-center text-white text-sm tracking-widest"
+        className="absolute left-0 right-0 text-center text-gray-400 text-xs tracking-widest"
         style={{ top: '33%' }}
       >
         {LOADING_TEXT.split('').map((char, i) => (
