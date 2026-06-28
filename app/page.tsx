@@ -29,7 +29,7 @@ export default function HomePage() {
 
   // 最低3.2秒間はスプラッシュ（動画）を表示し続けるためのタイマー
   useEffect(() => {
-    const timer = setTimeout(() => setMinTimeElapsed(true), 3200);
+    const timer = setTimeout(() => setMinTimeElapsed(true), 4000);
     return () => clearTimeout(timer);
   }, []);
 
