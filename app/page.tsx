@@ -98,8 +98,10 @@ export default function HomePage() {
   return (
     <div className="text-gray-900 bg-white font-sans antialiased">
 
-      {/* 初回読み込み中のスプラッシュ画面（スマホでのみ表示） */}
-      {showSplash && <LoadingSplash />}
+      {/* 初回読み込み中のスプラッシュ画面（スマホでのみ表示）。
+          常にレンダリングし、isVisible で表示/フェードアウトを制御する
+          （こうしないと、消える瞬間のフェードアニメーションが再生されない） */}
+      <LoadingSplash isVisible={showSplash} />
 
       {/* Header */}
       <header className="border-b border-gray-100 sticky top-0 bg-white/90 backdrop-blur-sm z-50">
