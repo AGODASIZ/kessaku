@@ -17,7 +17,7 @@ export default function MobileHomeScreen({
 
   useEffect(() => {
     // マウント直後だと transition が効かないことがあるため、1フレーム後にtrueにする
-    const timer = setTimeout(() => setLogoVisible(true), 5000);
+    const timer = setTimeout(() => setLogoVisible(true), 4200);
     return () => clearTimeout(timer);
   }, []);
 
@@ -35,7 +35,7 @@ export default function MobileHomeScreen({
         <img
           src="/logo.png"
           alt="傑作 Kessaku"
-          className="w-[110%] max-w-xs object-contain"
+          className="w-[110%] max-w-xs object-contain mt-32"
           style={{
             opacity: logoVisible ? 1 : 0,
             transition: 'opacity 1.2s ease-out',
