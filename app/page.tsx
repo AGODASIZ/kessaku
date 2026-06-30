@@ -8,6 +8,7 @@ import PageFlipSlideshow from '../components/PageFlipSlideshow';
 import AnnouncementBanners from '../components/AnnouncementBanners';
 import LoadingSplash from '../components/LoadingSplash';
 import TextureOverlay from '../components/TextureOverlay';
+import MobileHomeScreen from '../components/MobileHomeScreen';
 
 export default function HomePage() {
   const [scripts, setScripts] = useState<any[]>([]);
@@ -145,7 +146,11 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main>
+      {/* スマホ版：固定のホーム画面（ゲームのタイトル画面のような1枚絵） */}
+      <MobileHomeScreen />
+
+      {/* PC版のメインコンテンツ（スマホでは非表示） */}
+      <main className="hidden md:block">
         {/* Hero Section */}
         <section className="py-16 md:py-32 flex flex-col items-center text-center px-6">
 
@@ -158,14 +163,6 @@ export default function HomePage() {
             <PageFlipSlideshow images={heroImages} currentSlide={currentSlide} onDotClick={setCurrentSlide} />
           )}
 
-          <h1 className="text-3xl sm:text-4xl md:text-6xl font-serif font-bold leading-tight tracking-wide mb-6 md:mb-8">
-            あなたの作品が<br />誰かの舞台になる
-          </h1>
-          <p className="text-gray-600 text-sm sm:text-base md:text-xl mb-8 md:mb-10 leading-relaxed">
-            演劇を作る人のための台本投稿プラットフォーム。<br />
-            あなたの作品を、全国の舞台へ届けよう。
-          </p>
-          
           <div className="flex items-center gap-4 md:gap-6 mb-16 md:mb-24">
             <Link href="/search" className="bg-black text-white px-5 py-3 md:px-8 md:py-4 rounded-md font-medium text-sm md:text-base flex items-center gap-2 hover:bg-gray-800 transition">
               台本を探す <span className="material-symbols-outlined text-sm">arrow_forward</span>
