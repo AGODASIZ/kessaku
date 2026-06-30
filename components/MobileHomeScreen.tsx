@@ -35,7 +35,7 @@ export default function MobileHomeScreen({
         <img
           src="/logo.png"
           alt="傑作 Kessaku"
-          className="w-[70%] max-w-xs object-contain"
+          className="w-[110%] max-w-xs object-contain"
           style={{
             opacity: logoVisible ? 1 : 0,
             transition: 'opacity 1.2s ease-out',
