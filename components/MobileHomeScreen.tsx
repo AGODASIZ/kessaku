@@ -67,7 +67,7 @@ export default function MobileHomeScreen({
 
       {/* お知らせバナー（画面上部、ヘッダーの下に配置） */}
       <div
-        className="w-[70%] absolute top-60 left-0 right-0 px-4 flex justify-center"
+        className="absolute top-40 left-0 right-0 px-4 flex justify-center"
         style={{
           opacity: logoVisible ? 1 : 0,
           transition: 'opacity 1.2s ease-out 0.5s',
