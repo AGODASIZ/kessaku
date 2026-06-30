@@ -17,7 +17,7 @@ export default function MobileHomeScreen({
 
   useEffect(() => {
     // マウント直後だと transition が効かないことがあるため、1フレーム後にtrueにする
-    const timer = setTimeout(() => setLogoVisible(true), 100);
+    const timer = setTimeout(() => setLogoVisible(true), 5000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -67,7 +67,7 @@ export default function MobileHomeScreen({
 
       {/* お知らせバナー（画面上部、ヘッダーの下に配置） */}
       <div
-        className="absolute top-40 left-0 right-0 px-4 flex justify-center"
+        className="absolute top-30 left-0 right-0 px-4 flex justify-center"
         style={{
           opacity: logoVisible ? 1 : 0,
           transition: 'opacity 1.2s ease-out 0.5s',
