@@ -2,12 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import AnnouncementBanners from './AnnouncementBanners';
 
 // スマホ版トップページ専用の「ホーム画面」。
 // ゲームのタイトル画面のような、スクロールしない1枚絵の構成。
 // 背景(back.jpg)を画面全体に固定表示し、その上にロゴ(logo.png)をフェードインさせる。
 // 「台本を探す」「投稿する」ボタンは現時点ではテキストボタン（後で画像に差し替え予定）。
-export default function MobileHomeScreen() {
+export default function MobileHomeScreen({
+  banners,
+}: {
+  banners: { id: number; image_url: string; link_url: string | null }[];
+}) {
   const [logoVisible, setLogoVisible] = useState(false);
 
   useEffect(() => {
@@ -58,6 +63,17 @@ export default function MobileHomeScreen() {
             投稿する
           </Link>
         </div>
+      </div>
+
+      {/* お知らせバナー（画面上部、ヘッダーの下に配置） */}
+      <div
+        className="absolute top-20 left-0 right-0 px-4 flex justify-center"
+        style={{
+          opacity: logoVisible ? 1 : 0,
+          transition: 'opacity 1.2s ease-out 0.5s',
+        }}
+      >
+        <AnnouncementBanners banners={banners} />
       </div>
     </div>
   );

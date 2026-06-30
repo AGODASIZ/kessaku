@@ -147,7 +147,7 @@ export default function HomePage() {
       </header>
 
       {/* スマホ版：固定のホーム画面（ゲームのタイトル画面のような1枚絵） */}
-      <MobileHomeScreen />
+      <MobileHomeScreen banners={banners} />
 
       {/* PC版のメインコンテンツ（スマホでは非表示） */}
       <main className="hidden md:block">
