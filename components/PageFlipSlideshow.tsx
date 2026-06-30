@@ -110,7 +110,7 @@ export default function PageFlipSlideshow({
   return (
     <div
       ref={containerRef}
-      className="w-[70%] max-w-3xl mb-10 md:mb-14 rounded-lg relative aspect-[3/2] select-none touch-pan-y"
+      className="w-1000px max-w-3xl mb-10 md:mb-14 rounded-lg relative aspect-[3/2] select-none touch-pan-y"
       style={{ perspective: '1800px', cursor: images.length > 1 ? 'grab' : 'default' }}
       onMouseDown={(e) => handleDragStart(e.clientX)}
       onMouseMove={(e) => handleDragMove(e.clientX)}
