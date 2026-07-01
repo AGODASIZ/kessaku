@@ -59,7 +59,7 @@ export default function TopStage() {
       }
 
       const diagonal = Math.hypot(window.innerWidth, window.innerHeight);
-      if (dist >= diagonal * 0.5) {
+      if (dist >= diagonal * 0.2) {
         commit(d);
       }
     }
