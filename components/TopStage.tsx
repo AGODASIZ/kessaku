@@ -37,6 +37,15 @@ export default function TopStage() {
   const dragRef = useRef<DragState | null>(null);
   const floodRef = useRef<HTMLDivElement | null>(null);
   const [committedKey, setCommittedKey] = useState<OrbKey | null>(null);
+  const [visible, setVisible] = useState(false);
+  const shown = visible && !committedKey;
+
+  // 最初のロゴアニメーション（スプラッシュ）が終わる頃に合わせて、
+  // 画面外からふわっと現れる（元のMobileHomeScreenのフェードインを踏襲）
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), 4200);
+    return () => clearTimeout(timer);
+  }, []);
 
   // 遷移先の画面遷移を軽くしておく
   useEffect(() => {
@@ -167,33 +176,60 @@ export default function TopStage() {
 
       {/* ワードマーク */}
       <div
-        className="absolute top-[10%] left-0 right-0 text-center text-sm font-light tracking-[0.5em] text-[#16181C] transition-opacity duration-300"
-        style={{ opacity: committedKey ? 0 : 1, textIndent: "0.5em" }}
+        className="absolute top-[10%] left-0 right-0 text-center text-sm font-light tracking-[0.5em] text-[#16181C]"
+        style={{
+          opacity: shown ? 1 : 0,
+          transform: visible ? "translateY(0)" : "translateY(-40px)",
+          transition: "opacity 1.2s ease-out, transform 1.2s ease-out",
+          textIndent: "0.5em",
+        }}
       >
         K E S S A K U
       </div>
 
-      {/* 円リンク：さがす / つくる */}
-      <div className="absolute inset-0 flex items-end justify-between px-[12%] pb-[16%] md:px-[18%] md:pb-[14%]">
-        {(Object.keys(ORB) as OrbKey[]).map((key, i) => (
-          <div
-            key={key}
-            data-orb={key}
-            onPointerDown={handlePointerDown(key)}
-            className={`w-24 h-24 md:w-32 md:h-32 rounded-full flex items-center justify-center text-[11px] md:text-xs font-normal tracking-[0.28em] cursor-grab shadow-lg touch-none ${
-              i === 0 ? "mb-[10%]" : "mt-[6%]"
-            }`}
-            style={{ background: ORB[key].fill, color: "#FFFFFF", textIndent: "0.28em" }}
-          >
-            {ORB[key].label}
-          </div>
-        ))}
+      {/* 円リンク：さがす（下部固定） */}
+      <div
+        data-orb="search"
+        onPointerDown={handlePointerDown("search")}
+        className="absolute left-[12%] md:left-[18%] bottom-[16%] md:bottom-[14%] w-28 h-28 md:w-36 md:h-36 rounded-full flex items-center justify-center text-[11px] md:text-xs font-normal tracking-[0.28em] cursor-grab touch-none"
+        style={{
+          background: ORB.search.fill,
+          color: "#FFFFFF",
+          textIndent: "0.28em",
+          opacity: shown ? 1 : 0,
+          transform: visible ? "translateY(0)" : "translateY(80px)",
+          transition: "opacity 1.2s ease-out 0.3s, transform 1.2s ease-out 0.3s",
+        }}
+      >
+        {ORB.search.label}
+      </div>
+
+      {/* 円リンク：つくる（画面の縦中央あたり） */}
+      <div
+        data-orb="post"
+        onPointerDown={handlePointerDown("post")}
+        className="absolute right-[12%] md:right-[18%] top-1/2 w-28 h-28 md:w-36 md:h-36 rounded-full flex items-center justify-center text-[11px] md:text-xs font-normal tracking-[0.28em] cursor-grab touch-none"
+        style={{
+          background: ORB.post.fill,
+          color: "#FFFFFF",
+          textIndent: "0.28em",
+          opacity: shown ? 1 : 0,
+          transform: visible ? "translateY(-50%)" : "translateY(calc(-50% - 80px))",
+          transition: "opacity 1.2s ease-out 0.5s, transform 1.2s ease-out 0.5s",
+        }}
+      >
+        {ORB.post.label}
       </div>
 
       {/* ヒント */}
       <div
-        className="absolute bottom-[6%] left-0 right-0 text-center text-[11px] font-light tracking-[0.35em] text-[#16181C]/75 transition-opacity duration-300"
-        style={{ opacity: committedKey ? 0 : 1, textIndent: "0.35em" }}
+        className="absolute bottom-[6%] left-0 right-0 text-center text-[11px] font-light tracking-[0.35em] text-[#16181C]/75"
+        style={{
+          opacity: shown ? 1 : 0,
+          transform: visible ? "translateY(0)" : "translateY(30px)",
+          transition: "opacity 1.2s ease-out 0.7s, transform 1.2s ease-out 0.7s",
+          textIndent: "0.35em",
+        }}
       >
         指を離さず　円を広げてください
       </div>
