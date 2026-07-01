@@ -91,11 +91,21 @@ export default function TopStage() {
       setCommittedKey(d.key);
 
       const flood = floodRef.current;
-      const diagonal = Math.hypot(window.innerWidth, window.innerHeight);
+      // orb の中心から画面の四隅までの最長距離を実測し、そこを半径にする
+      // （orb は中央にいるとは限らないため、対角線をそのまま使うと届かない角が出る）
+      const corners = [
+        [0, 0],
+        [window.innerWidth, 0],
+        [0, window.innerHeight],
+        [window.innerWidth, window.innerHeight],
+      ];
+      const maxRadius = Math.max(...corners.map(([x, y]) => Math.hypot(x - d.cx, y - d.cy)));
+      const coverDiameter = maxRadius * 2 * 1.08; // 少し余裕を持たせる
+
       if (flood) {
         flood.style.transition = "width .5s cubic-bezier(.2,.8,.2,1), height .5s cubic-bezier(.2,.8,.2,1)";
-        flood.style.width = `${diagonal * 1.3}px`;
-        flood.style.height = `${diagonal * 1.3}px`;
+        flood.style.width = `${coverDiameter}px`;
+        flood.style.height = `${coverDiameter}px`;
       }
 
       setTimeout(() => {
@@ -150,7 +160,7 @@ export default function TopStage() {
   }
 
   return (
-    <div ref={stageRef} className="relative w-full h-[calc(100vh-4rem)] overflow-hidden select-none">
+    <div ref={stageRef} className="relative w-full h-full overflow-hidden select-none">
       {/* 背景画像（スマホ / PC で出し分け） */}
       <img src="/back_mob.png" alt="" className="absolute inset-0 w-full h-full object-cover md:hidden" />
       <img src="/back_pc.png" alt="" className="absolute inset-0 w-full h-full object-cover hidden md:block" />
@@ -170,10 +180,10 @@ export default function TopStage() {
             key={key}
             data-orb={key}
             onPointerDown={handlePointerDown(key)}
-            className={`w-20 h-20 md:w-28 md:h-28 rounded-full flex items-center justify-center text-[11px] md:text-xs font-normal tracking-[0.28em] cursor-grab shadow-lg touch-none transition-[opacity,transform] duration-300 data-[active=true]:opacity-0 data-[active=true]:scale-50 ${
+            className={`w-24 h-24 md:w-32 md:h-32 rounded-full flex items-center justify-center text-[11px] md:text-xs font-normal tracking-[0.28em] cursor-grab shadow-lg touch-none ${
               i === 0 ? "mb-[10%]" : "mt-[6%]"
             }`}
-            style={{ background: ORB[key].fill, color: ORB[key].ink, textIndent: "0.28em" }}
+            style={{ background: ORB[key].fill, color: "#FFFFFF", textIndent: "0.28em" }}
           >
             {ORB[key].label}
           </div>
