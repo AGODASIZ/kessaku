@@ -9,8 +9,8 @@ import { useRouter } from "next/navigation";
 //
 // タップではなく、円を押さえたまま指を離さずに動かすと、動かした距離ぶんだけ
 // 円が広がっていく。画面の対角線の約6割まで広げると確定（コミット）し、
-// その色が画面全体に広がりきったところで、その色をテーマにした遷移先
-// （さがす→/search、つくる→/post）へ移動する。
+// その色が画面全体に広がりきったところで、その色をテーマにした中間ページ
+// （さがす→/search-hub、つくる→/create-hub）へ移動する。
 //
 // フラッド（広がる色の円）は React ツリーの外（document.body直下）に生成する。
 // こうすることで、Next.jsのクライアント遷移でページ本体が入れ替わった後も
@@ -19,8 +19,8 @@ import { useRouter } from "next/navigation";
 type OrbKey = "search" | "post";
 
 const ORB: Record<OrbKey, { fill: string; ink: string; label: string; route: string }> = {
-  search: { fill: "#FFAAAD", ink: "#5C2224", label: "さがす", route: "/search" },
-  post: { fill: "#C3D7D9", ink: "#1F3A3D", label: "つくる", route: "/post" },
+  search: { fill: "#FFAAAD", ink: "#5C2224", label: "さがす", route: "/search-hub" },
+  post: { fill: "#C3D7D9", ink: "#1F3A3D", label: "つくる", route: "/create-hub" },
 };
 
 type DragState = {
@@ -49,8 +49,8 @@ export default function TopStage() {
 
   // 遷移先の画面遷移を軽くしておく
   useEffect(() => {
-    router.prefetch("/search");
-    router.prefetch("/post");
+    router.prefetch("/search-hub");
+    router.prefetch("/create-hub");
   }, [router]);
 
   useEffect(() => {
@@ -221,17 +221,34 @@ export default function TopStage() {
         {ORB.post.label}
       </div>
 
-      {/* ヒント */}
+      {/* スワイプ操作のヒント：円の反対側（左右）に向かって指が動くアニメーション */}
       <div
-        className="absolute bottom-[6%] left-0 right-0 text-center text-[11px] font-light tracking-[0.35em] text-[#16181C]/75"
+        className="absolute left-[12%] md:left-[18%] bottom-[calc(16%+7.5rem)] md:bottom-[calc(14%+9.5rem)] flex items-center gap-1 text-[#16181C]/70"
         style={{
           opacity: shown ? 1 : 0,
-          transform: visible ? "translateY(0)" : "translateY(30px)",
-          transition: "opacity 1.2s ease-out 0.7s, transform 1.2s ease-out 0.7s",
-          textIndent: "0.35em",
+          transition: "opacity 1.2s ease-out 0.9s",
         }}
       >
-        指を離さず　円を広げてください
+        <span
+          className="material-symbols-outlined text-2xl"
+          style={{ animation: "swipe-hint-right 1.8s ease-in-out infinite" }}
+        >
+          swipe_right
+        </span>
+      </div>
+      <div
+        className="absolute right-[12%] md:right-[18%] top-[calc(50%-9.5rem)] md:top-[calc(50%-11.5rem)] flex items-center gap-1 text-[#16181C]/70"
+        style={{
+          opacity: shown ? 1 : 0,
+          transition: "opacity 1.2s ease-out 0.9s",
+        }}
+      >
+        <span
+          className="material-symbols-outlined text-2xl"
+          style={{ animation: "swipe-hint-left 1.8s ease-in-out infinite" }}
+        >
+          swipe_left
+        </span>
       </div>
     </div>
   );
